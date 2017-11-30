@@ -6,27 +6,29 @@
 
 unsigned int heuristic(const std::string& v1, const std::string& v2);
 
-void WordsGraph::buildGraph(const std::string& file1, const std::string& file2)
+// build words graph from the file with start and end words (startAndEndWordsFile) and the file with words (wordsFile)
+void WordsGraph::buildGraph(const std::string& startAndEndWordsFile, const std::string& wordsFile)
 {
-    std::ifstream fs1(file1);
+    std::ifstream fs1(startAndEndWordsFile);
 
     if (!fs1)
-        throw std::invalid_argument("Cannot open the file " + file1);
+        throw std::invalid_argument("Cannot open the file " + startAndEndWordsFile);
 
     if (!(fs1 >> startWord_))
-        throw std::invalid_argument("Incorrect start word in file " + file1);
+        throw std::invalid_argument("Incorrect start word in the file " + startAndEndWordsFile);
 
     auto len = startWord_.length();
 
     if (!(fs1 >> endWord_) || endWord_.length() != len)
-        throw std::invalid_argument("Incorrect end word in file " + file1 + " (the length of the start word must be equal to the length of the end word).");
+        throw std::invalid_argument("Incorrect end word in the file " + startAndEndWordsFile +
+                                            " (the length of the start word must be equal to the length of the end word).");
 
     fs1.close();
 
-    std::ifstream fs2(file2);
+    std::ifstream fs2(wordsFile);
 
     if (!fs2)
-        throw std::invalid_argument("Cannot open the file " + file2);
+        throw std::invalid_argument("Cannot open the file " + wordsFile);
 
     std::string word;
     std::unordered_map<std::string, std::unordered_set<std::string>> dict;
@@ -44,9 +46,12 @@ void WordsGraph::buildGraph(const std::string& file1, const std::string& file2)
         dict[bucket].insert(endWord_);
     }
 
-    while (fs2 >> word)
+    if (!(fs2 >> word))
+        throw std::invalid_argument("The file " + wordsFile + " is empty");
+
+    do
     {
-        if (word == startWord_ || word == endWord_) continue;
+        if (word == startWord_ || word == endWord_) continue; // they are in the dict already
 
         if (word.length() == len)
         {
@@ -61,9 +66,11 @@ void WordsGraph::buildGraph(const std::string& file1, const std::string& file2)
             }
         }
     }
+    while (fs2 >> word);
 
     fs2.close();
 
+    // form the adjacency list of the graph
     for (const auto& key : dict)
         for (const auto& word1 : dict[key.first])
             for (const auto& word2 : dict[key.first])
@@ -76,8 +83,9 @@ void WordsGraph::buildWordsLadder() noexcept
     wordsLadder_ = std::list<std::string>();
     auto queue = std::priority_queue<PriorValue, std::vector<PriorValue>, Comparator>();
     queue.push(PriorValue(startWord_, 0));
-    auto cameFrom = std::unordered_map<std::string, std::string>();
-    auto costTo = std::unordered_map<std::string, unsigned int>();
+    auto cameFrom = std::unordered_map<std::string, std::string>(); // Ancestors of the vertexes (to restore the path from
+                                                                    // the end vertex to the start)
+    auto costTo = std::unordered_map<std::string, unsigned int>(); // Costs to vertexes from the start vertex
     cameFrom[startWord_] = "";
     costTo[startWord_] = 0;
 
@@ -89,10 +97,11 @@ void WordsGraph::buildWordsLadder() noexcept
         if (current.getValue() == endWord_)
             break;
 
-        for (const auto& next : adjList_.at(current.getValue()))
+        for (const auto& next : adjList_[current.getValue()])
         {
-            auto new_cost = costTo[current.getValue()] + 1;
-            if (costTo.find(next) == costTo.end() || new_cost < costTo[next])
+            auto new_cost = costTo[current.getValue()] + 1; // cost to adjacent vertex of current vertex
+            if (costTo.find(next) == costTo.end() || new_cost < costTo[next]) // if this vertex has not been visited
+                                                                    // or her new cost is less than her previous cost
             {
                 costTo[next] = new_cost;
                 queue.push(PriorValue(next, new_cost + heuristic(next, endWord_)));
@@ -101,15 +110,19 @@ void WordsGraph::buildWordsLadder() noexcept
         }
     }
 
+    // form words ladder
     wordsLadder_.push_front(endWord_);
     auto word = cameFrom[endWord_];
+    if (word.empty()) // if end word is ungraceful
+    {
+        wordsLadder_.push_front(startWord_);
+        return;
+    }
     while (!word.empty())
     {
         wordsLadder_.push_front(word);
         word = cameFrom[word];
     }
-    if (wordsLadder_.front() != startWord_)
-        wordsLadder_.push_front(startWord_);
 }
 
 const std::list<std::string>& WordsGraph::getLadder() const noexcept
@@ -131,7 +144,7 @@ void WordsGraph::writeLadderInFile(const std::string& file) const noexcept
 {
     std::ofstream ofs(file);
 
-    if (wordsLadder_.size() <= 2)
+    if (wordsLadder_.size() < 2 || (wordsLadder_.size() == 2 && heuristic(wordsLadder_.front(), wordsLadder_.back()) > 1))
         ofs << "Cannot build a ladder of words";
     else
         for (const auto& w : wordsLadder_)

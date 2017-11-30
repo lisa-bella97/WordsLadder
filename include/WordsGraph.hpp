@@ -9,7 +9,7 @@
 class WordsGraph
 {
 public:
-    void buildGraph(const std::string& file1, const std::string& file2);
+    void buildGraph(const std::string& startAndEndWordsFile, const std::string& wordsFile);
     void buildWordsLadder() noexcept;
     const std::list<std::string>& getLadder() const noexcept;
     std::string getStartWord() const noexcept;
@@ -35,7 +35,7 @@ private:
         bool operator()(PriorValue fst, PriorValue scnd);
     };
 
-    std::unordered_map<std::string, std::unordered_set<std::string>> adjList_;
+    std::unordered_map<std::string, std::unordered_set<std::string>> adjList_; // adjacency list of the graph
     std::string startWord_;
     std::string endWord_;
     std::list<std::string> wordsLadder_;
