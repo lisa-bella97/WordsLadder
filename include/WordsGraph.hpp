@@ -2,8 +2,8 @@
 #define WORDS_GRAPH_HPP
 
 #include <unordered_map>
-#include <unordered_set>
 #include <list>
+#include <forward_list>
 #include <string>
 
 class WordsGraph
@@ -32,10 +32,10 @@ private:
     class Comparator
     {
     public:
-        bool operator()(PriorValue fst, PriorValue scnd);
+        bool operator()(const PriorValue& fst, const PriorValue& scnd);
     };
 
-    std::unordered_map<std::string, std::unordered_set<std::string>> adjList_; // adjacency list of the graph
+    std::unordered_map<std::string, std::forward_list<std::string>> adjList_; // adjacency list of the graph
     std::string startWord_;
     std::string endWord_;
     std::list<std::string> wordsLadder_;

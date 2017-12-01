@@ -31,19 +31,19 @@ void WordsGraph::buildGraph(const std::string& startAndEndWordsFile, const std::
         throw std::invalid_argument("Cannot open the file " + wordsFile);
 
     std::string word;
-    std::unordered_map<std::string, std::unordered_set<std::string>> dict;
+    std::unordered_map<std::string, std::forward_list<std::string>> dict;
 
     for (size_t i = 0; i < len; ++i) // add startWord_ and endWord_ in the dict
     {
         auto bucket = startWord_.substr(0, i) + '_' + startWord_.substr(i + 1, len - i - 1);
         if (dict.find(bucket) == dict.end())
-            dict[bucket] = std::unordered_set<std::string>();
-        dict[bucket].insert(startWord_);
+            dict[bucket] = std::forward_list<std::string>();
+        dict[bucket].push_front(startWord_);
 
         bucket = endWord_.substr(0, i) + '_' + endWord_.substr(i + 1, len - i - 1);
         if (dict.find(bucket) == dict.end())
-            dict[bucket] = std::unordered_set<std::string>();
-        dict[bucket].insert(endWord_);
+            dict[bucket] = std::forward_list<std::string>();
+        dict[bucket].push_front(endWord_);
     }
 
     if (!(fs2 >> word))
@@ -60,9 +60,9 @@ void WordsGraph::buildGraph(const std::string& startAndEndWordsFile, const std::
                 auto bucket = word.substr(0, i) + '_' + word.substr(i + 1, len - i - 1);
 
                 if (dict.find(bucket) == dict.end())
-                    dict[bucket] = std::unordered_set<std::string>();
+                    dict[bucket] = std::forward_list<std::string>();
 
-                dict[bucket].insert(word);
+                dict[bucket].push_front(word);
             }
         }
     }
@@ -165,7 +165,7 @@ int WordsGraph::PriorValue::getPriority() const noexcept
     return priority_;
 }
 
-bool WordsGraph::Comparator::operator()(WordsGraph::PriorValue fst, WordsGraph::PriorValue scnd)
+bool WordsGraph::Comparator::operator()(const WordsGraph::PriorValue& fst, const WordsGraph::PriorValue& scnd)
 {
     return fst.getPriority() > scnd.getPriority();
 }
@@ -173,14 +173,14 @@ bool WordsGraph::Comparator::operator()(WordsGraph::PriorValue fst, WordsGraph::
 void WordsGraph::addEdge(const std::string& v1, const std::string& v2) noexcept
 {
     if (adjList_.find(v1) == adjList_.end())
-        adjList_[v1] = std::unordered_set<std::string>();
+        adjList_[v1] = std::forward_list<std::string>();
 
-    adjList_[v1].insert(v2);
+    adjList_[v1].push_front(v2);
 
     if (adjList_.find(v2) == adjList_.end())
-        adjList_[v2] = std::unordered_set<std::string>();
+        adjList_[v2] = std::forward_list<std::string>();
 
-    adjList_[v2].insert(v1);
+    adjList_[v2].push_front(v1);
 }
 
 unsigned int heuristic(const std::string& v1, const std::string& v2)

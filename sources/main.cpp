@@ -6,7 +6,7 @@ int main(int argc, char* argv[])
 {
     if (argc != 2 && argc != 3)
     {
-        std::cerr << "Too few arguments\n";
+        std::cerr << "Wrong number of command arguments.\n";
         return 0;
     }
 
@@ -22,11 +22,11 @@ int main(int argc, char* argv[])
     catch(const std::invalid_argument& ex)
     {
         std::cerr << ex.what() << std::endl;
+        g.writeLadderInFile("../ladder.txt");
         return 0;
     }
 
     g.buildWordsLadder();
-    auto ladder = g.getLadder();
     g.writeLadderInFile("../ladder.txt");
     return 0;
 }
