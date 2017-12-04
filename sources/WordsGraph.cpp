@@ -9,71 +9,12 @@ unsigned int heuristic(const std::string& v1, const std::string& v2);
 // build words graph from the file with start and end words (startAndEndWordsFile) and the file with words (wordsFile)
 void WordsGraph::buildGraph(const std::string& startAndEndWordsFile, const std::string& wordsFile)
 {
-    std::ifstream fs1(startAndEndWordsFile);
-
-    if (!fs1)
-        throw std::invalid_argument("Cannot open the file " + startAndEndWordsFile);
-
-    if (!(fs1 >> startWord_))
-        throw std::invalid_argument("Incorrect start word in the file " + startAndEndWordsFile);
-
-    auto len = startWord_.length();
-
-    if (!(fs1 >> endWord_) || endWord_.length() != len)
-        throw std::invalid_argument("Incorrect end word in the file " + startAndEndWordsFile +
-                                            " (the length of the start word must be equal to the length of the end word).");
-
-    fs1.close();
-
-    std::ifstream fs2(wordsFile);
-
-    if (!fs2)
-        throw std::invalid_argument("Cannot open the file " + wordsFile);
-
-    std::string word;
-    std::unordered_map<std::string, std::forward_list<std::string>> dict;
-
-    for (size_t i = 0; i < len; ++i) // add startWord_ and endWord_ in the dict
-    {
-        auto bucket = startWord_.substr(0, i) + '_' + startWord_.substr(i + 1, len - i - 1);
-        if (dict.find(bucket) == dict.end())
-            dict[bucket] = std::forward_list<std::string>();
-        dict[bucket].push_front(startWord_);
-
-        bucket = endWord_.substr(0, i) + '_' + endWord_.substr(i + 1, len - i - 1);
-        if (dict.find(bucket) == dict.end())
-            dict[bucket] = std::forward_list<std::string>();
-        dict[bucket].push_front(endWord_);
-    }
-
-    if (!(fs2 >> word))
-        throw std::invalid_argument("The file " + wordsFile + " is empty");
-
-    do
-    {
-        if (word == startWord_ || word == endWord_) continue; // they are in the dict already
-
-        if (word.length() == len)
-        {
-            for (size_t i = 0; i < len; ++i)
-            {
-                auto bucket = word.substr(0, i) + '_' + word.substr(i + 1, len - i - 1);
-
-                if (dict.find(bucket) == dict.end())
-                    dict[bucket] = std::forward_list<std::string>();
-
-                dict[bucket].push_front(word);
-            }
-        }
-    }
-    while (fs2 >> word);
-
-    fs2.close();
+    auto wordBuckets = getWordsBuckets(startAndEndWordsFile, wordsFile);
 
     // form the adjacency list of the graph
-    for (const auto& key : dict)
-        for (const auto& word1 : dict[key.first])
-            for (const auto& word2 : dict[key.first])
+    for (const auto& key : wordBuckets)
+        for (const auto& word1 : wordBuckets[key.first])
+            for (const auto& word2 : wordBuckets[key.first])
                 if (word1 != word2)
                     addEdge(word1, word2);
 }
@@ -94,18 +35,18 @@ void WordsGraph::buildWordsLadder() noexcept
         auto current = queue.top();
         queue.pop();
 
-        if (current.getValue() == endWord_)
+        if (current.first == endWord_)
             break;
 
-        for (const auto& next : adjList_[current.getValue()])
+        for (const auto& next : adjList_[current.first])
         {
-            auto new_cost = costTo[current.getValue()] + 1; // cost to adjacent vertex of current vertex
+            auto new_cost = costTo[current.first] + 1; // cost to adjacent vertex of current vertex
             if (costTo.find(next) == costTo.end() || new_cost < costTo[next]) // if this vertex has not been visited
                                                                     // or her new cost is less than her previous cost
             {
                 costTo[next] = new_cost;
                 queue.push(PriorValue(next, new_cost + heuristic(next, endWord_)));
-                cameFrom[next] = current.getValue();
+                cameFrom[next] = current.first;
             }
         }
     }
@@ -128,6 +69,11 @@ void WordsGraph::buildWordsLadder() noexcept
 const std::list<std::string>& WordsGraph::getLadder() const noexcept
 {
     return wordsLadder_;
+}
+
+const std::unordered_map<std::string, std::forward_list<std::string>>& WordsGraph::getAdjList() const noexcept
+{
+    return adjList_;
 }
 
 std::string WordsGraph::getStartWord() const noexcept
@@ -153,21 +99,71 @@ void WordsGraph::writeLadderInFile(const std::string& file) const noexcept
     ofs.close();
 }
 
-WordsGraph::PriorValue::PriorValue(const std::string &value, int priority) : value_(value), priority_(priority) {}
-
-const std::string& WordsGraph::PriorValue::getValue() const noexcept
-{
-    return value_;
-}
-
-int WordsGraph::PriorValue::getPriority() const noexcept
-{
-    return priority_;
-}
-
 bool WordsGraph::Comparator::operator()(const WordsGraph::PriorValue& fst, const WordsGraph::PriorValue& scnd)
 {
-    return fst.getPriority() > scnd.getPriority();
+    return fst.second > scnd.second;
+}
+
+WordsGraph::WBucketsType WordsGraph::getWordsBuckets(const std::string& startAndEndWordsFile, const std::string& wordsFile)
+{
+    std::ifstream fs1(startAndEndWordsFile);
+
+    if (!fs1)
+        throw std::invalid_argument("Cannot open the file " + startAndEndWordsFile);
+
+    if (!(fs1 >> startWord_))
+        throw std::invalid_argument("Incorrect start word in the file " + startAndEndWordsFile);
+
+    auto len = startWord_.length();
+
+    if (!(fs1 >> endWord_) || endWord_.length() != len)
+        throw std::invalid_argument("Incorrect end word in the file " + startAndEndWordsFile +
+                                    " (the length of the start word must be equal to the length of the end word).");
+
+    fs1.close();
+
+    std::ifstream fs2(wordsFile);
+
+    if (!fs2)
+        throw std::invalid_argument("Cannot open the file " + wordsFile);
+
+    std::string word;
+    WBucketsType wordBuckets;
+
+    for (size_t i = 0; i < len; ++i) // add startWord_ and endWord_ in the wordBuckets
+    {
+        auto bucket = startWord_.substr(0, i) + '_' + startWord_.substr(i + 1, len - i - 1);
+        if (wordBuckets.find(bucket) == wordBuckets.end())
+            wordBuckets[bucket] = std::unordered_set<std::string>();
+        wordBuckets[bucket].insert(startWord_);
+
+        bucket = endWord_.substr(0, i) + '_' + endWord_.substr(i + 1, len - i - 1);
+        if (wordBuckets.find(bucket) == wordBuckets.end())
+            wordBuckets[bucket] = std::unordered_set<std::string>();
+        wordBuckets[bucket].insert(endWord_);
+    }
+
+    while (fs2 >> word)
+    {
+        if (word == startWord_ || word == endWord_) continue; // they are in the wordBuckets already
+
+        if (word.length() == len)
+        {
+            for (size_t i = 0; i < len; ++i)
+            {
+                auto bucket = word.substr(0, i) + '_' + word.substr(i + 1, len - i - 1);
+
+                if (wordBuckets.find(bucket) == wordBuckets.end())
+                    wordBuckets[bucket] = std::unordered_set<std::string>();
+
+                wordBuckets[bucket].insert(word);
+            }
+        }
+    }
+
+    fs2.close();
+
+    return wordBuckets;
 }
 
 void WordsGraph::addEdge(const std::string& v1, const std::string& v2) noexcept

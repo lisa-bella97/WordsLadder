@@ -4,17 +4,18 @@
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2 && argc != 3)
+    if (argc != 3 && argc != 4)
     {
         std::cerr << "Wrong number of command arguments.\n";
         return 0;
     }
 
     WordsGraph g;
+    auto i = argc == 3 ? 2 : 3;
 
     try
     {
-        if (argc == 2)
+        if (argc == 3)
             g.buildGraph(argv[1], "../sources/words.txt");
         else
             g.buildGraph(argv[1], argv[2]);
@@ -22,11 +23,10 @@ int main(int argc, char* argv[])
     catch(const std::invalid_argument& ex)
     {
         std::cerr << ex.what() << std::endl;
-        g.writeLadderInFile("../ladder.txt");
         return 0;
     }
 
     g.buildWordsLadder();
-    g.writeLadderInFile("../ladder.txt");
+    g.writeLadderInFile(argv[i]);
     return 0;
 }
