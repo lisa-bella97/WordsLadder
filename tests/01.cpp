@@ -8,10 +8,10 @@ SCENARIO("Test 01")
         std::string file1 = "../tests/01_1.dat";
         std::string file2 = "../tests/01_2.dat";
 
-        std::list<std::string> answer1 = {"sage", "sale", "pale", "pall", "poll", "pool", "fool"};
-        std::list<std::string> answer2 = {"sage", "page", "pale", "pall", "poll", "pool", "fool"};
-        std::list<std::string> answer3 = {"sage", "sale", "pale", "pole", "poll", "pool", "fool"};
-        std::list<std::string> answer4 = {"sage", "page", "pale", "pole", "poll", "pool", "fool"};
+        std::list<std::wstring> answer1 = {L"sage", L"sale", L"pale", L"pall", L"poll", L"pool", L"fool"};
+        std::list<std::wstring> answer2 = {L"sage", L"page", L"pale", L"pall", L"poll", L"pool", L"fool"};
+        std::list<std::wstring> answer3 = {L"sage", L"sale", L"pale", L"pole", L"poll", L"pool", L"fool"};
+        std::list<std::wstring> answer4 = {L"sage", L"page", L"pale", L"pole", L"poll", L"pool", L"fool"};
 
         WHEN("build words graph and words ladder")
         {

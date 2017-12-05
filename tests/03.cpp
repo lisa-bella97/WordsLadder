@@ -8,7 +8,7 @@ SCENARIO("Test 03")
         std::string file1 = "../tests/03_1.dat";
         std::string file2 = "../tests/03_2.dat";
 
-        std::list<std::string> answer = {"01234", "51234", "56234", "56734", "56784", "56789"};
+        std::list<std::wstring> answer = {L"01234", L"51234", L"56234", L"56734", L"56784", L"56789"};
 
         WHEN("build words ladder")
         {

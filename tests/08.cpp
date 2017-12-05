@@ -1,21 +1,20 @@
 #include "WordsGraph.hpp"
 #include "catch.hpp"
 
-SCENARIO("Test 06")
+SCENARIO("Test 08")
 {
-    GIVEN("2 input files and the correct answer")
+    GIVEN("1 input file and the correct answer")
     {
-        std::string file1 = "../tests/06_1.dat";
-        std::string file2 = "../tests/06_2.dat";
+        std::string file = "../tests/08.dat";
 
-        std::list<std::wstring> answer = {L"123e", L"e23e"};
+        std::list<std::wstring> answer = {L"dog", L"dog"};
 
         WHEN("build words ladder")
         {
             WordsGraph graph;
-            graph.buildGraph(file1, file2);
+            graph.buildGraph(file, "../sources/words.txt");
             graph.buildWordsLadder();
-            graph.writeLadderInFile("../tests/06.ans");
+            graph.writeLadderInFile("../tests/08.ans");
             auto res = graph.getLadder();
 
             THEN("result and the correct answer must be equal")
